@@ -4,6 +4,7 @@ import swagger from '@elysiajs/swagger';
 import { ServiceStatus, MonitoringResult, HttpServiceConfig, IcmpServiceConfig } from './types';
 import { Logger } from './utils/logger';
 import { StateStorage } from './storage';
+import { DiscordAlerter } from './utils/discord';
 
 interface SlaveInfo {
   name: string;
@@ -16,10 +17,12 @@ export class UptimeMaster {
   private slaves: Map<string, SlaveInfo> = new Map();
   private logger: Logger;
   private storage: StateStorage;
+  private discord: DiscordAlerter;
 
   constructor() {
     this.logger = new Logger('MASTER', 'uptime-master');
     this.storage = new StateStorage();
+    this.discord = new DiscordAlerter();
     this.loadState();
   }
 
@@ -415,6 +418,20 @@ export class UptimeMaster {
 
     await this.saveState();
     this.log(`📊 Updated status for service ${result.serviceId}: ${result.success ? 'UP' : 'DOWN'}`);
+
+    const oldStatus = service.lastStatus;
+    const newStatus = result.success;
+
+    // Send Discord alert if status changed
+    if (oldStatus !== newStatus) {
+      const slave = this.slaves.get(slaveId);
+      const checkWithSlaveName = {
+        ...result,
+        slaveName: slave?.name,
+        slaveId
+      };
+      await this.discord.sendStatusChangeAlert(result.serviceId, oldStatus as ServiceStatus, newStatus, checkWithSlaveName);
+    }
   }
 
   private async handleHeartbeat(slaveId: string, name: string, services: string[]) {
@@ -451,13 +468,13 @@ export class UptimeMaster {
     let unhealthySlaves = 0;
 
     // Check each slave's last heartbeat
-    for (const [slaveId, slave] of this.slaves.entries()) {
-      if (now - slave.lastSeen > 60000) { // No heartbeat in last minute
+    for (const [slaveId, info] of this.slaves.entries()) {
+      if (now - info.lastSeen > 60000) { // No heartbeat in last minute
         unhealthySlaves++;
-        this.logWarn(`⚠️ Slave ${slave.name} (${slaveId}) appears to be down`);
+        this.logWarn(`⚠️ Slave ${info.name} (${slaveId}) appears to be down`);
 
         // Redistribute its services
-        for (const serviceId of slave.services) {
+        for (const serviceId of info.services) {
           const service = this.services.get(serviceId);
           if (service) {
             this.distributeService(service).catch(error => {
@@ -468,9 +485,10 @@ export class UptimeMaster {
         }
 
         // Remove the slave if it's been down for more than 5 minutes
-        if (now - slave.lastSeen > 300000) {
+        if (now - info.lastSeen > 300000) {
           this.slaves.delete(slaveId);
-          this.logWarn(`❌ Removed unresponsive slave ${slave.name} (${slaveId})`);
+          this.logWarn(`❌ Removed unresponsive slave ${info.name} (${slaveId})`);
+          this.discord.sendSlaveOfflineAlert(slaveId, info.name);
         }
       }
     }
