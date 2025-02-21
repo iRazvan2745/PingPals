@@ -1,0 +1,23 @@
+{
+  "name": "pingpals",
+  "version": "1.0.50",
+  "scripts": {
+    "start:master": "bun run src/master.ts",
+    "start:slave": "bun run src/slave.ts",
+    "dev": "bun run src/dev.ts"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "latest",
+    "@elysiajs/swagger": "latest",
+    "elysia": "latest",
+    "node-cron": "latest",
+    "node-fetch": "^3.3.2",
+    "ping": "^0.4.4",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "@types/node-cron": "latest"
+  },
+  "module": "src/master.js"
+}
