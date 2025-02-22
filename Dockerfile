@@ -3,10 +3,10 @@ FROM oven/bun:1.0.25
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 
 # Install dependencies
-RUN bun install --production
+RUN bun install
 
 # Copy source files
 COPY src ./src
@@ -22,4 +22,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Start master
-CMD ["bun", "run", "src/master.ts"]
+CMD ["bun", "run", "src/index.ts"]
