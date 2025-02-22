@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  pingpals-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.master
+    container_name: pingpals-master
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - PORT=${PORT:-3000}
+      - HOST=${HOST:-0.0.0.0}
+      - NODE_ENV=${NODE_ENV:-production}
+      - API_KEY=${API_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - DATA_DIR=/app/data
+      - STATE_RETENTION_DAYS=${STATE_RETENTION_DAYS:-30}
+      - SLAVE_HEARTBEAT_INTERVAL=${SLAVE_HEARTBEAT_INTERVAL:-30}
+      - SLAVE_TIMEOUT=${SLAVE_TIMEOUT:-60}
+      - MIN_SLAVES_PER_SERVICE=${MIN_SLAVES_PER_SERVICE:-2}
+      - MAX_SERVICES_PER_SLAVE=${MAX_SERVICES_PER_SLAVE:-50}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - DISCORD_ALERT_MENTIONS=${DISCORD_ALERT_MENTIONS}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-3000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
