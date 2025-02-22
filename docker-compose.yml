@@ -2,7 +2,7 @@ services:
   pingpals-master:
     build:
       context: .
-      dockerfile: Dockerfile.master
+      dockerfile: Dockerfile
     container_name: pingpals-master
     ports:
       - "${PORT:-3000}:3000"
