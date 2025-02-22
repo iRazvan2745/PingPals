@@ -1,5 +1,7 @@
 import { spawn } from 'child_process';
 import fetch from 'node-fetch';
+import { UptimeMaster } from './index';
+import { MasterConfig } from './types';
 
 const startProcess = (command: string, env: Record<string, string>) => {
   const proc = spawn('bun', ['run', command], {
@@ -30,78 +32,51 @@ const waitForPort = async (port: number, retries = 20, delay = 1000): Promise<bo
   return false;
 };
 
-console.log('🚀 Starting development cluster...');
+console.log('🚀 Starting Master...');
 
 // Generate a development API key
-const DEV_API_KEY = 'dev-' + Math.random().toString(36).slice(2);
-console.log('🔑 Using development API key:', DEV_API_KEY);
+process.env.NODE_ENV = 'development';
+process.env.API_KEY = process.env.API_KEY || 'dev-' + Math.random().toString(36).slice(2);
+process.env.PORT = process.env.PORT || '3000';
+process.env.HOST = process.env.HOST || 'localhost';
 
-// Start master
-const master = startProcess('src/master.ts', {
-  PORT: '3000',
-  HOST: 'localhost',
-  API_KEY: DEV_API_KEY,
-  NODE_ENV: 'development',
-  ALLOWED_ORIGINS: '*',
-  STATE_RETENTION_DAYS: '30',
-  DATA_DIR: './data',
-  SLAVE_HEARTBEAT_INTERVAL: '30'
-});
+console.log('🔑 Using development API key:', process.env.API_KEY);
 
-// Start slaves after ensuring master is ready
-const startSlaves = async () => {
-  console.log('⏳ Waiting for master to start...');
-  const masterReady = await waitForPort(3000);
-  
-  if (!masterReady) {
-    console.error('❌ Master failed to start within timeout period');
-    cleanup();
-    process.exit(1);
-  }
-
-  console.log('✅ Master is ready, starting slaves...');
-
-  // Start slaves
-  const slave1 = startProcess('src/slave.ts', {
-    PORT: '3001',
-    HOST: 'localhost',
-    SLAVE_ID: 'slave1',
-    SLAVE_NAME: 'Local Dev Slave 1',
-    MASTER_URL: 'http://localhost:3000',
-    API_KEY: DEV_API_KEY,
-    NODE_ENV: 'development',
-    MAX_CONCURRENT_CHECKS: '50',
-    CHECK_TIMEOUT: '30000',
-    RETRY_ATTEMPTS: '3'
-  });
-
-  const slave2 = startProcess('src/slave.ts', {
-    PORT: '3002',
-    HOST: 'localhost',
-    SLAVE_ID: 'slave2',
-    SLAVE_NAME: 'Local Dev Slave 2',
-    MASTER_URL: 'http://localhost:3000',
-    API_KEY: DEV_API_KEY,
-    NODE_ENV: 'development',
-    MAX_CONCURRENT_CHECKS: '50',
-    CHECK_TIMEOUT: '30000',
-    RETRY_ATTEMPTS: '3'
-  });
-
-  processes.push(slave1, slave2);
+// Create master configuration
+const config: MasterConfig = {
+  port: parseInt(process.env.PORT || '3000'),
+  host: process.env.HOST || '0.0.0.0',
+  apiKey: process.env.API_KEY,
+  slaves: [],
+  heartbeatInterval: 30,
+  stateRetentionPeriod: 30 * 24 * 60 * 60, // 30 days in seconds
+  maxServicesPerSlave: 50,
+  allowedOrigins: ['*'],
+  rateLimit: 100
 };
 
-const processes = [master];
+// Development environment configuration
+process.env.NODE_ENV = 'development';
+process.env.API_KEY = process.env.API_KEY || 'dev-key';
+process.env.PORT = process.env.PORT || '3000';
+process.env.HOST = process.env.HOST || '0.0.0.0';
+process.env.ALLOWED_ORIGINS = '*';
+process.env.STATE_RETENTION_DAYS = '30';
+process.env.DATA_DIR = './data';
+process.env.SLAVE_HEARTBEAT_INTERVAL = '30';
 
+console.log('🚀 Starting master in development mode...');
+console.log(`API Key: ${process.env.API_KEY}`);
+console.log(`Listening on: http://${process.env.HOST}:${process.env.PORT}`);
+
+// Start the master
+const master = new UptimeMaster();
+
+// Handle graceful shutdown
 const cleanup = () => {
-  console.log('\n🛑 Shutting down development cluster...');
-  for (const proc of processes) {
-    proc.kill();
-  }
+  console.log('\n👋 Shutting down master...');
   process.exit(0);
 };
 
 process.on('SIGINT', cleanup);
 process.on('SIGTERM', cleanup);
-
-startSlaves();

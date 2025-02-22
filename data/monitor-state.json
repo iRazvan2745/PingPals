@@ -1,0 +1,66 @@
+{
+  "services": {
+    "service-d7kgk5k": {
+      "id": "service-d7kgk5k",
+      "name": "Ams-1",
+      "type": "icmp",
+      "host": "ams-1.irazz.lol",
+      "interval": 60000,
+      "timeout": 5000,
+      "createdAt": 1740181117019,
+      "lastCheck": 1740192953162,
+      "lastStatus": "UP",
+      "uptimePercentage": 74.71323751069555,
+      "uptimePercentage30d": 100,
+      "assignedSlaves": [
+        "slave1",
+        "slave2"
+      ],
+      "currentIncident": null,
+      "downtimeLog": [],
+      "slaveResults": {}
+    },
+    "service-wwjhj3o": {
+      "id": "service-wwjhj3o",
+      "name": "Website",
+      "type": "http",
+      "url": "https://irazz.lol",
+      "interval": 60000,
+      "timeout": 5000,
+      "createdAt": 1740181207831,
+      "lastCheck": 1740192953954,
+      "lastStatus": "DOWN",
+      "uptimePercentage": 100,
+      "uptimePercentage30d": 100,
+      "assignedSlaves": [
+        "slave1",
+        "slave2"
+      ],
+      "currentIncident": null,
+      "downtimeLog": [],
+      "slaveResults": {}
+    }
+  },
+  "slaves": {
+    "slave2": {
+      "name": "Local Dev Slave 2",
+      "lastSeen": 1740192952902,
+      "services": [
+        0,
+        1,
+        "service-d7kgk5k",
+        "service-wwjhj3o"
+      ]
+    },
+    "slave1": {
+      "name": "Local Dev Slave 1",
+      "lastSeen": 1740192950905,
+      "services": [
+        0,
+        1,
+        "service-d7kgk5k",
+        "service-wwjhj3o"
+      ]
+    }
+  }
+}

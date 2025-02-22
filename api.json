@@ -1,0 +1,347 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PingPals Master API",
+    "version": "1.0.0",
+    "description": "Distributed uptime monitoring system - Master node API"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["system"],
+        "summary": "Health check endpoint",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "System is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services": {
+      "get": {
+        "tags": ["services"],
+        "summary": "Get all monitored services",
+        "responses": {
+          "200": {
+            "description": "List of all services",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceStatus"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["services"],
+        "summary": "Add a new service to monitor",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "type": "string", "enum": ["http"] },
+                      "url": { "type": "string" },
+                      "interval": { "type": "number" },
+                      "timeout": { "type": "number" }
+                    },
+                    "required": ["name", "type", "url", "interval", "timeout"]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "type": "string", "enum": ["icmp"] },
+                      "host": { "type": "string" },
+                      "interval": { "type": "number" },
+                      "timeout": { "type": "number" }
+                    },
+                    "required": ["name", "type", "host", "interval", "timeout"]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Service created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}": {
+      "get": {
+        "tags": ["services"],
+        "summary": "Get a specific service by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Service details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["services"],
+        "summary": "Edit a service configuration",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "url": { "type": "string" },
+                      "interval": { "type": "number" },
+                      "timeout": { "type": "number" }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "host": { "type": "string" },
+                      "interval": { "type": "number" },
+                      "timeout": { "type": "number" }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Service updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["services"],
+        "summary": "Remove a service from monitoring",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Service removed successfully"
+          }
+        }
+      }
+    },
+    "/heartbeat": {
+      "post": {
+        "tags": ["slaves"],
+        "summary": "Handle slave heartbeat",
+        "parameters": [
+          {
+            "name": "x-slave-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-slave-name",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-slave-services",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Heartbeat processed successfully"
+          }
+        }
+      }
+    },
+    "/report": {
+      "post": {
+        "tags": ["monitoring"],
+        "summary": "Handle monitoring report from slave",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slaveId": { "type": "string" },
+                  "serviceId": { "type": "string" },
+                  "timestamp": { "type": "number" },
+                  "success": { "type": "boolean" },
+                  "duration": { "type": "number" },
+                  "error": { "type": ["string", "null"] }
+                },
+                "required": ["slaveId", "serviceId", "timestamp", "success", "duration"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Report processed successfully"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ServiceStatus": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["http", "icmp"] },
+          "url": { "type": "string" },
+          "host": { "type": "string" },
+          "interval": { "type": "number" },
+          "timeout": { "type": "number" },
+          "createdAt": { "type": "number" },
+          "lastCheck": { "type": "number" },
+          "lastStatus": { "type": "boolean" },
+          "uptimePercentage": { "type": "number" },
+          "uptimePercentage30d": { "type": "number" },
+          "assignedSlaves": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "currentIncident": {
+            "type": "object",
+            "properties": {
+              "start": { "type": "number" },
+              "error": { "type": "string" }
+            },
+            "nullable": true
+          },
+          "downtimeLog": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string" },
+                "downtimeMs": { "type": "number" },
+                "incidents": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "start": { "type": "number" },
+                      "end": { "type": "number" },
+                      "error": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

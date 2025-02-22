@@ -1,4 +1,5 @@
 export type MonitorType = 'http' | 'icmp';
+export type CurrentStatus = 'UP' | 'DOWN';
 
 export interface BaseServiceConfig {
   id: string;
@@ -65,6 +66,24 @@ export interface DowntimePeriod {
   end: number | null;
 }
 
+export interface SlaveResult {
+  success: boolean;
+  timestamp: number;
+  error: string | null;
+}
+
+export type SlaveResultMap = Map<string, SlaveResult>;
+
+export interface DailyDowntime {
+  date: string;  // ISO date string YYYY-MM-DD
+  downtimeMs: number;  // Total downtime in milliseconds for this day
+  incidents: Array<{
+    start: number;
+    end: number | null;
+    error?: string;
+  }>;
+}
+
 export interface ServiceStatus {
   id: string;
   name: string;
@@ -75,12 +94,16 @@ export interface ServiceStatus {
   timeout: number;
   createdAt: number;
   lastCheck: number;
-  lastStatus: boolean;
+  lastStatus: CurrentStatus;
   uptimePercentage: number;
   uptimePercentage30d: number;
   assignedSlaves: string[];
-  lastDowntime: DowntimePeriod | null;
-  downtimePeriods: DowntimePeriod[];
+  currentIncident: {
+    start: number;
+    error?: string;
+  } | null;
+  downtimeLog: DailyDowntime[];  // Last 30 days of downtime logs
+  slaveResults: SlaveResultMap;
 }
 
 export interface UptimeRecord {
